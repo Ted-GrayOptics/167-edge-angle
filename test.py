@@ -3,7 +3,7 @@ import time
 import cv2
 
 
-image = cv2.imread('Image0.bmp', cv2.IMREAD_UNCHANGED)
+image = cv2.imread('./TestImages/Image0.bmp', cv2.IMREAD_UNCHANGED)
 
 estimator = AngleEstimator(resize_factor = 0.5, crop_factor = 0.8, pattern_size = [4,4])
 start_time = time.time()
