@@ -31,7 +31,7 @@ Floating value between ]0,1]
 - 
 Cropping the image at the center for performance sake. Please keep in mind that if cropping results in very smal checkerboard (less than 2*2), the algorithm fails.
 
-### pattern_size
-The checkerboard size [rows, columns]. It works in decreasing manner. So, actually, it is the highest possible checkerboard size. For example, if you provided [5 ,5], the ALgorithm will search for [5,5], if not found for [5,4], if not found for [4,5] and so on till [2,2].
+### max_pattern_size & min_pattern_size
+The checkerboard size [rows, columns]. It works in decreasing manner. So, actually, it is the highest possible checkerboard size. For example, if you provided [5 ,5], the Algorithm will search for [5,5], if not found for [5,4], if not found for [4,5] and so on till min_pattern_size.
 
 Using high value results in low FPS since detecting the checkerboard is the most performance intensive operation by far.

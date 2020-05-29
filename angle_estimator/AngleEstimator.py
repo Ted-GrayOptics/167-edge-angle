@@ -3,6 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import math
 import time
+import copy
 
 class AngleEstimator:
 
@@ -10,11 +11,13 @@ class AngleEstimator:
         self,
         resize_factor,
         crop_factor,
-        pattern_size,
+        max_pattern_size,
+        min_pattern_size,
         ):
         self.resize_factor = resize_factor
         self.crop_factor = crop_factor
-        self.pattern_size = pattern_size
+        self.max_pattern_size = max_pattern_size
+        self.min_pattern_size = min_pattern_size
 
     def Estimate(self, image):
         roi = self.__ResizeAndCrop(image)
@@ -28,14 +31,31 @@ class AngleEstimator:
             p2[0] /= self.resize_factor
             p2[1] /= self.resize_factor
         if self.crop_factor != 1:
-            p1[0] += (1 - self.crop_factor) * image.shape[1] / 2
-            p1[1] += (1 - self.crop_factor) * image.shape[0] / 2
-            p2[0] += (1 - self.crop_factor) * image.shape[1] / 2
-            p2[1] += (1 - self.crop_factor) * image.shape[0] / 2
+            roi_width = self.crop_factor * min(image.shape[1],image.shape[0])
+            roi_height = self.crop_factor * min(image.shape[1],image.shape[0])
+            diff_roi_width = image.shape[1] - roi_width
+            diff_roi_height = image.shape[0] - roi_height
+            (x, y, w, h) = [int(diff_roi_width / 2),
+                            int(diff_roi_height / 2), int(roi_width),
+                            int(roi_height)]
+            p1[0] += x
+            p1[1] += y
+            p2[0] += x
+            p2[1] += y
         return angle, p1, p2
 
-    def RenderResult(self, image, angle, p1, p2):
+    def RenderResult(self, image, angle, p1, p2):    
+        roi_width = self.crop_factor * min(image.shape[1],image.shape[0])
+        roi_height = self.crop_factor * min(image.shape[1],image.shape[0])
+        diff_roi_width = image.shape[1] - roi_width
+        diff_roi_height = image.shape[0] - roi_height
+        (x, y, w, h) = [int(diff_roi_width / 2),
+                        int(diff_roi_height / 2), int(roi_width),
+                        int(roi_height)]
         viz = image.copy()
+        cv2.blur(viz, (41,41), viz)
+        viz[y:y + h, x:x + w] = image[y:y + h, x:x + w].copy()
+        #cv2.rectangle(viz, (x,y), (x+w,y+h), (0,0,255), 2)
         cv2.line(viz, (int(p1[0]),int(p1[1])), (int(p2[0]),int(p2[1])), (0, 0, 255), 3)
         # cv2.drawChessboardCorners(viz, (pattern_size[0],pattern_size[1]), corners, True)
         angle_str = '{0:.2f}'.format(angle)
@@ -73,23 +93,29 @@ class AngleEstimator:
         flags = 0
         flags |= cv2.CALIB_CB_ADAPTIVE_THRESH
         flags |= cv2.CALIB_CB_FAST_CHECK
+        flags |= cv2.CALIB_CB_NORMALIZE_IMAGE
         (rv, points) = cv2.findChessboardCorners(image,
                 (pattern_size[0], pattern_size[1]), flags=flags)
         if not rv:
             return None
         else:
             return points
+        # points, score = detect_checkerboard(image, (pattern_size[0],pattern_size[1]))
+        # if score > 0.01:
+        #     return points
+        # else:
+        #     return None
 
     def __ResizeAndCrop(self, image):
-        roi_width = self.crop_factor * image.shape[1]
-        roi_height = self.crop_factor * image.shape[0]
+        roi_width = self.crop_factor * min(image.shape[1],image.shape[0])
+        roi_height = self.crop_factor * min(image.shape[1],image.shape[0])
         diff_roi_width = image.shape[1] - roi_width
         diff_roi_height = image.shape[0] - roi_height
         (x, y, w, h) = [int(diff_roi_width / 2),
                         int(diff_roi_height / 2), int(roi_width),
                         int(roi_height)]
         image = image[y:y + h, x:x + w].copy()
-        image = cv2.resize(image, 
+        image = cv2.resize(image,
                             (int(image.shape[1] * self.resize_factor),
                             int(image.shape[0] * self.resize_factor)),
                             interpolation=cv2.INTER_AREA)
@@ -98,13 +124,13 @@ class AngleEstimator:
     def __DetectCorners(self, image):
         corners = None
         t = 0
-        pattern_size = self.pattern_size
+        pattern_size = copy.deepcopy(self.max_pattern_size)
         while corners is None:
             corners = self.__FindChessboard(image, pattern_size)
             if corners is None:
                 pattern_size[t] = pattern_size[t] - 1
                 t = 1 - t
-                if pattern_size[0] <= 2 or pattern_size[1] <= 2:
+                if pattern_size[0] < self.min_pattern_size[0] or self.min_pattern_size[1] <= 2:
                     return None, None
         return corners, pattern_size
 
@@ -145,7 +171,7 @@ class AngleEstimator:
                     min_val = val
                     min_idx = idx
 
-            p1 = line[min_idx]
+            p1 = line[0]
             points_to_center_distance[min_idx] = float('inf')
             min_val = float('inf')
             min_idx = 0
@@ -153,7 +179,7 @@ class AngleEstimator:
                 if val < min_val:
                     min_val = val
                     min_idx = idx
-            p2 = line[min_idx]
+            p2 = line[-1]
             xs = [p1[0], p2[0]]
             ys = [p1[1], p2[1]]
             fitted = np.polyfit(xs, ys, 1)
