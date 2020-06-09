@@ -41,7 +41,7 @@ def captureimagechanl_0():
     if angle is None or p1 is None or p2 is None:
         print('Fail!')
     else:   
-        print('Success! angle = ' + str(angle))
+        print('Success! angle = ', "%.2f" % angle)
         img = estimator.RenderResult(img, angle, p1, p2)
     #################################################################################
 
@@ -83,7 +83,7 @@ def captureimagechanl_1():
     if angle is None or p1 is None or p2 is None:
         print('Fail!')
     else:   
-        print('Success! angle = ' + str(angle))
+        print('Success! angle = ', "%.2f" % angle)
         img = estimator.RenderResult(img, angle, p1, p2)
     #################################################################################
 

@@ -23,7 +23,7 @@ if process == 'test':
             print(test_image + ' Fail!')
             viz = image
         else:   
-            print(test_image + ' Success! angle = ' + str(angle))
+            print(test_image + ' Success! angle = ', "%.2f" % angle)
             viz = estimator.RenderResult(image, angle, p1, p2)
         cv2.imshow('Viz', viz)
         if cv2.waitKey(0) & 0xFF == ord('q'):
@@ -47,7 +47,7 @@ else:
             print('Frame #' + str(frame_idx) + ' Fail!')
             viz = image
         else:   
-            print('Frame #' + str(frame_idx) + ' Success! angle = ' + str(angle))
+            print('Frame #' + str(frame_idx) + ' Success! angle = ', "%.2f" % angle)
             viz = estimator.RenderResult(image, angle, p1, p2)
         viz = cv2.resize(viz, output_video_size)
         cv2.imshow('Viz', viz)
@@ -55,7 +55,7 @@ else:
             break
         out.write(viz)
         frame_idx += 1
+    cap.release()
+    out.release()
         
 cv2.destroyAllWindows()
-cap.release()
-out.release()
